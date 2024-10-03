@@ -153,3 +153,44 @@ mims_df_clean %>%
 ```
 
 In this plot, we can see that the distribution of age by sex seems to be approximately equal, though there appears to be an especially large concentration of younger women (between 21 and 40 years old) who have completed more than a high school education. The age distributions of those who have not completed high school or completed a high school equivalent, on the other hand, look relatively uniform regardless of gender, and generally have a larger concentration of older participants than the group who has completed more than high school.
+
+#### Plot of Activity Based on Age, across Sex and Education
+
+```{r}
+
+mims_df_clean %>%
+  mutate(total_mims = rowSums(across(c(min1:min1440)))) %>%
+  ggplot(aes(x = age, y = total_mims, color = sex)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(sex ~ education) + 
+  labs(
+    title = "Scatter Plot of Total MIMS by Age Across Sex and Education",
+    color = "Sex",
+    x = "Age",
+    y = "Total MIMS"
+  )
+
+```
+
+From the plot, we can see that the correlation between total MIMS and age looks to be negative, regardless of sex and education. The association between age and total MIMS looks to be weaker for both men and women with a higher level of education, with the "less than HS" group having the strongest association and the "more than HS" group having the weakest association. Finally, the average total MIMS does not seem to be significantly different among women and men.
+
+#### Activity Plot over the Course of the Day
+
+```{r}
+
+mims_df_clean %>%
+  pivot_longer(
+    cols = min1:min1440,
+    names_to = "minute",
+    values_to = "MIMS",
+    names_prefix = "min"
+  ) %>%
+  mutate(minute = as.numeric(minute)) %>%
+  ggplot(aes(x = minute, y = MIMS, color = sex)) + 
+    geom_point() + 
+    facet_wrap(. ~ education)
+
+```
+
+For all three groups, MIMS activity looks to be low towards the far left end of the graph, which makes sense given that "minute 0" represents midnight, and so the subsequent hours would be in the middle of the night. As the day goes on, the total MIMS generally increases. One interesting trend is that among the "more than HS" group, the peak for women appears to be much earlier than the peak for men, and both peaks are well above those for the "less than HS" and "HS Equivalent" groups.
