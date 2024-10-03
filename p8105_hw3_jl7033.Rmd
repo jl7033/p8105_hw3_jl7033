@@ -61,13 +61,20 @@ At least to the naked eye, there doesn't seem to be any significant outliers in 
 
 temp_plot = ny_noaa_clean %>%
   ggplot(aes(x = tmin, y = tmax)) + 
-  geom_hex(bins = 40)
+  geom_hex(bins = 40) + 
+  labs(
+    x = "Minimum Temperature",
+    y = "Maximum Temperature"
+  )
 
 snow_plot = ny_noaa_clean %>%
   filter(snow > 0, snow < 100) %>%
   ggplot(aes(x = snwd)) + 
   geom_histogram() + 
-  facet_wrap(. ~ year)
+  facet_wrap(. ~ year) +
+  labs(
+    x = "Snowfall"
+  )
 
 temp_plot + snow_plot
 
@@ -77,4 +84,72 @@ I decided on a hexagonal heat map over a scatterplot due to the size of the data
 
 ## Problem 2
 
+#### Upload and Merge the Data
 
+```{r}
+
+demographics_df = read_csv("nhanes_covar.csv", skip = 4) %>%
+  janitor::clean_names()
+
+accel_df = read_csv("nhanes_accel.csv") %>%
+  janitor::clean_names()
+
+mims_df = left_join(demographics_df, accel_df)
+
+```
+
+#### Clean the Data
+
+```{r}
+
+mims_df_clean = mims_df %>%
+  filter(age >= 21, !is.na(sex & age & bmi & education)) %>%
+  mutate(sex = as.factor(
+    case_match(
+           sex, 
+           1 ~ "Male",
+           2 ~ "Female"
+         )
+  ), 
+  education = as.factor(
+    case_match(
+      education,
+      1 ~ "Less Than HS",
+      2 ~ "HS Equivalent",
+      3 ~ "More Than HS")
+    )
+  ) 
+
+```
+
+#### Table for Men and Women by Education
+
+```{r}
+
+mims_df_clean %>%
+  group_by(sex, education) %>%
+  janitor::tabyl(sex, education)
+
+```
+
+We can see in this table than the most common education level is having completed more than high school, with approximately the same number of participants having not completed high school and having completed a high school equivalent.
+
+#### Plot for Age Distributions of Men and Women
+
+```{r}
+
+mims_df_clean %>%
+  group_by(sex, education) %>%
+  ggplot(aes(x = age, fill = sex)) + 
+  geom_histogram(color = "black") + 
+  facet_wrap(sex ~ education) + 
+  labs(
+    title = "Distribution of Age by Gender and Education",
+    fill = "Sex",
+    x = "Age",
+    y = "Count"
+  )
+
+```
+
+In this plot, we can see that the distribution of age by sex seems to be approximately equal, though there appears to be an especially large concentration of younger women (between 21 and 40 years old) who have completed more than a high school education. The age distributions of those who have not completed high school or completed a high school equivalent, on the other hand, look relatively uniform regardless of gender, and generally have a larger concentration of older participants than the group who has completed more than high school.
