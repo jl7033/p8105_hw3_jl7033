@@ -1,0 +1,30 @@
+---
+title: "p8105_hw3_jl7033"
+author: "Joe LaRocca"
+date: "2024-10-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(p8105.datasets)
+```
+
+## Problem 1
+
+```{r}
+
+data(ny_noaa)
+
+```
+
+```{r}
+
+ny_noaa %>%
+  separate(date, into = c("year", "month", "day"), sep = c(4, 7)) %>%
+  mutate(month = str_remove(month, "-")) %>%
+  mutate(day = str_remove(day, "-"))
+
+```
+
