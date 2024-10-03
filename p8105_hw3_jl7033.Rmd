@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(p8105.datasets)
+library(patchwork)
 ```
 
 ## Problem 1
@@ -19,12 +20,61 @@ data(ny_noaa)
 
 ```
 
+#### Cleaning the Data
+
 ```{r}
 
-ny_noaa %>%
+ny_noaa_clean = ny_noaa %>%
+  janitor::clean_names() %>%
   separate(date, into = c("year", "month", "day"), sep = c(4, 7)) %>%
-  mutate(month = str_remove(month, "-")) %>%
-  mutate(day = str_remove(day, "-"))
+  mutate(month = str_remove(month, "-"),
+         month = month.abb[as.numeric(month)],
+         day = str_remove(day, "-"),
+         prcp = as.numeric(prcp),
+         snow = as.numeric(snow),
+         snwd = as.numeric(snwd),
+         tmax = as.numeric(tmax),
+         tmin = as.numeric(tmin)) %>%
+  arrange(desc(year))
 
 ```
+
+This dataset contains weather information in New York State between the years 1981 and 2010 (I checked using the `arrange()` function). There are a total of over 2.5 million observations, and the variables measures include the amount of total precipitation, the amount of snowfall, and the maximum and minimum temperatures. About 56.3\% of the observations within the dataset have data for maxmimum and minimum temperature, whereas 94.3\%, 85.3\%, and 77.2\% of the observations have data for precipitation, snowfall, and `snwd`, respectively (I found these proportions by dividing the number of rows for which there is data by the total number of rows). For snowfall, the most commonly observed value is 0, since it doesn't snow during most of the year in New York State.
+
+#### Plot 1: Average Max Temperature in January and July
+
+```{r}
+
+ny_noaa_clean %>%
+  filter(month == "Jan" | month == "Jul") %>%
+  ggplot(aes(x = tmax, fill = month)) + 
+  geom_histogram(color = "black") + 
+  facet_grid(. ~ month)
+
+```
+
+At least to the naked eye, there doesn't seem to be any significant outliers in either histogram of maximum temperatures; both look to be approximately symmetric, with the January histogram having a slightly greater spread than the July histogram. One question I have is what the tmax values mean, since they don't seem to align with Fahrenheit, Celsius, or Kelvin. 
+
+#### Plot 2: Tmax vs. Tmin for the entire dataset / Snowfall Values
+
+```{r}
+
+temp_plot = ny_noaa_clean %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_hex(bins = 40)
+
+snow_plot = ny_noaa_clean %>%
+  filter(snow > 0, snow < 100) %>%
+  ggplot(aes(x = snwd)) + 
+  geom_histogram() + 
+  facet_wrap(. ~ year)
+
+temp_plot + snow_plot
+
+```
+
+I decided on a hexagonal heat map over a scatterplot due to the size of the dataset, as we were advised to look for alternatives to typical scatterplots with especially large datasets. Using this map, we can see that the largest densities of points appear between a `tmin` of 0 and 200 and a `tmax` of 0 and 300, with a clear positive correlation between the two variables (which makes sense, as we would expect a day with a higher minimum temperature to have a higher maxmimum temperature, too).
+
+## Problem 2
+
 
