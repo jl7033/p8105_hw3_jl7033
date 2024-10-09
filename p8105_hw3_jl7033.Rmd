@@ -86,7 +86,7 @@ I decided on a hexagonal heat map over a scatterplot due to the size of the data
 
 #### Upload and Merge the Data
 
-```{r}
+```{r, message = FALSE}
 
 demographics_df = read_csv("nhanes_covar.csv", skip = 4) %>%
   janitor::clean_names()
@@ -189,8 +189,84 @@ mims_df_clean %>%
   mutate(minute = as.numeric(minute)) %>%
   ggplot(aes(x = minute, y = MIMS, color = sex)) + 
     geom_point() + 
-    facet_wrap(. ~ education)
+    facet_wrap(. ~ education) + 
+  labs(
+    title = "Scatterplots of MIMS by Minute Across Sex and Education",
+    x = "Minute",
+    color = "Sex"
+  )
 
 ```
 
+In order to create this plot, I created two new variables called `minute` and `MIMS` so that MIMS can be plotted as a function of the minute of the day.
+
 For all three groups, MIMS activity looks to be low towards the far left end of the graph, which makes sense given that "minute 0" represents midnight, and so the subsequent hours would be in the middle of the night. As the day goes on, the total MIMS generally increases. One interesting trend is that among the "more than HS" group, the peak for women appears to be much earlier than the peak for men, and both peaks are well above those for the "less than HS" and "HS Equivalent" groups.
+
+## Problem 3
+
+#### Import, Tidy, Combine the Data
+
+```{r}
+
+citi_jan_2020 = read_csv("data/Jan 2020 Citi.csv") %>%
+  janitor::clean_names() %>%
+  mutate(time = "Jan_2020")
+
+citi_jul_2020 = read_csv("data/July 2020 Citi.csv") %>%
+  janitor::clean_names() %>%
+  mutate(time = "Jul_2020")
+  
+citi_jan_2024 = read_csv("data/Jan 2024 Citi.csv") %>%
+  janitor::clean_names() %>%
+  mutate(time = "Jan_2024")
+
+citi_jul_2024 = read_csv("data/July 2024 Citi.csv") %>%
+  janitor::clean_names() %>%
+  mutate(time = "Jul_2024")
+
+citi_df = bind_rows(citi_jan_2020, 
+                citi_jul_2020,
+                citi_jan_2024,
+                citi_jul_2024)
+
+citi_jul_2024
+
+```
+
+#### Describing the Dataset
+
+In the total dataset, there are approximately 100,000 Citi Bike rides between January 2020, July 2020, January 2024, and July 2024. The time period with the most rides is July 2024 (~47\% of rides), which is not surprising, considering that more people generally ride bikes in the summer than the winter and July 2020 was in the middle of the COVID-19 pandemic. 
+
+The columns of the dataset describe the ride's unique ID, the type of bike ridden (classic or electric), the day of the week the ride was on, the duration of the ride (in minutes), the stations where the ride started and ended, and whether the rider was a Citi Bike member or a casual rider.
+
+#### Total Number of Rides / Casual/Member Table
+
+##### Using janitor::tabyl
+
+```{r}
+
+citi_df %>%
+  janitor::tabyl(time, member_casual) %>%
+  mutate(pct_member = member / (member + casual) * 100)
+
+```
+
+##### Alternative: using the summarize() function
+
+```{r}
+
+citi_df %>%
+  group_by(time, member_casual) %>%
+  summarize(n_obs = n()) %>%
+  pivot_wider(
+    names_from = member_casual,
+    values_from = n_obs
+  )
+
+```
+
+We can see that the total number of Citi Bike riders increased over time; in fact, there were more recorded rides in January 2024 -- in the middle of winter -- than in July of 2020 (the COVID pandemic may have been a factor). I added the `pct_member` column to this table to illustrate that the proportion of members generally decreased from 2020 to 2024 -- that is, Citi Bike attracted a larger portion of casual riders in 2024 than it did in 2020.
+
+#### Table of 5 most popular starting stations
+
+
