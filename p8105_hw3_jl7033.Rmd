@@ -163,7 +163,6 @@ mims_df_clean %>%
   mutate(total_mims = rowSums(across(c(min1:min1440)))) %>%
   ggplot(aes(x = age, y = total_mims, color = sex)) + 
   geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(sex ~ education) + 
   labs(
     title = "Scatter Plot of Total MIMS by Age Across Sex and Education",
@@ -189,7 +188,8 @@ mims_df_clean %>%
   ) %>%
   mutate(minute = as.numeric(minute)) %>%
   ggplot(aes(x = minute, y = MIMS, color = sex)) + 
-    geom_point() + 
+    geom_point(alpha = 0.3) + 
+    geom_smooth(se = FALSE) +
     facet_wrap(. ~ education) + 
   labs(
     title = "Scatterplots of MIMS by Minute Across Sex and Education",
@@ -274,11 +274,61 @@ We can see that the total number of Citi Bike riders increased over time; in fac
 
 citi_df %>%
   filter(time == "Jul_2024") %>%
-  mutate(station_count = str_count(start_station_name),
-         station_rank = min_rank(desc(station_count))) %>%
-  summary(station_count)
+  group_by(start_station_name) %>%
+  summarize(n_obs = n()) %>%
+  arrange(desc(n_obs)) %>%
+  slice(1:5)
 
 ```
 
+#### Plot of Day of Week/Month/Year on Median Ride Duration
 
+```{r}
 
+citi_df %>%
+  separate_wider_delim(time, names = c("month", "year"), delim = "_") %>%
+  mutate(weekday_fac = factor(
+    weekdays,
+    levels = c("Monday", "Tuesday", "Wednesday", "Thursday",
+               "Friday", "Saturday", "Sunday"))) %>%
+  ggplot(aes(y = duration, x = weekday_fac, fill = weekday_fac)) + 
+  geom_boxplot() + 
+  scale_y_continuous(limits = c(0, 100)) +
+  facet_wrap(month ~ year) + 
+  labs(
+    x = "Day of the Week",
+    y = "Duration of Citi Bike Ride",
+    title = "Duration of Citi Bike Rides by Month, Year, and Day of the Week",
+    fill = "Day of the Week"
+  ) +
+  theme(axis.text.x = element_text(angle = 30))
+
+```
+
+I decided to use side-by-side boxplots to display the median duration, since the "stripe" in the middle of a boxplot represents the median of the distribution. I reordered the `weekday` variable into a factor in order to show the distributions from Monday through Sunday in the correct order. 
+
+From this plot, we can see that the median ride times were generally longest in July of 2020, and were often longer on the weekends than on the weekdays (though this effect is less noticeable in January 2024). The distributions of ride times were right-skewed for all years, months, and days of the week, with third quartiles mostly between 20 and 25 and maximums well above 100 (outliers above 100 minutes are omitted from the graph for the sake of clarity). Finally, the IQRs were wider in July than they are in January, and were widest in July of 2020.
+
+#### Plot of Month, Membership Status, and Bike Type on Ride Duration
+
+```{r}
+
+citi_df %>%
+  separate_wider_delim(time, names = c("month", "year"), delim = "_") %>%
+  filter(year == "2024") %>%
+  ggplot(aes(x = rideable_type, y = duration, fill = rideable_type)) + 
+  geom_boxplot() + 
+  scale_y_continuous(limits = c(0, 100)) +
+  facet_wrap(month ~ member_casual) + 
+  labs(
+    x = "Bike Type",
+    y = "Duration of Citi Bike Ride",
+    title = "Duration of Citi Bike Rides by Month, Membership Status, and Bike Type",
+    fill = "Bike Type"
+  )
+  
+```
+
+I once again chose side-by-side boxplots for this problem, as I felt they would more clearly show the distributions of duration than histograms, even with the `position = "dodge"` parameter on. 
+
+Generally, for casual riders, the median duration for classic bikes was higher than the median duration for electric bikes, but for Citi Bike members, the median duration for electric bikes was slightly higher. The IQR of the duration of classic bike rides was higher than the IQR of the duration of electric bike rides for casual riders, but not for Citi Bike members. Similarly to the previous plot, we can see that the distribution of ride durations was right-skewed, regardless of membership status, month, or bike type.
