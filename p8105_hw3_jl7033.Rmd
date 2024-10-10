@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(p8105.datasets)
 library(patchwork)
+library(stringr)
 ```
 
 ## Problem 1
@@ -268,5 +269,16 @@ citi_df %>%
 We can see that the total number of Citi Bike riders increased over time; in fact, there were more recorded rides in January 2024 -- in the middle of winter -- than in July of 2020 (the COVID pandemic may have been a factor). I added the `pct_member` column to this table to illustrate that the proportion of members generally decreased from 2020 to 2024 -- that is, Citi Bike attracted a larger portion of casual riders in 2024 than it did in 2020.
 
 #### Table of 5 most popular starting stations
+
+```{r}
+
+citi_df %>%
+  filter(time == "Jul_2024") %>%
+  mutate(station_count = str_count(start_station_name),
+         station_rank = min_rank(desc(station_count))) %>%
+  summary(station_count)
+
+```
+
 
 
